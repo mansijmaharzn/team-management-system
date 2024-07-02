@@ -8,6 +8,8 @@ from users.serializers import UserSerializer, RegisterSerializer, LoginSerialize
 
 
 class RegisterAPI(APIView):
+    serializer_class = RegisterSerializer
+
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
@@ -24,6 +26,8 @@ class RegisterAPI(APIView):
     
 
 class LoginAPI(APIView):
+    serializer_class = LoginSerializer
+
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
@@ -39,5 +43,7 @@ class LoginAPI(APIView):
     
 
 class LogoutAPI(APIView):
+    serializer_class = UserSerializer
+    
     def post(self, request):
         return Response(status=status.HTTP_200_OK)
