@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User
 
 from teams.serializers import TeamSerializer, AddMemberSerializer, RemoveMemberSerializer
+from teams.permissions import IsTeamCreator
 from teams.models import Team
 
 
@@ -32,14 +33,11 @@ class TeamListAPIView(APIView):
     
 
 class AddMemberAPIView(APIView):
-    permission_classes = [permissions.IsAuthenticated]  
+    permission_classes = [permissions.IsAuthenticated, IsTeamCreator]
     serializer_class = AddMemberSerializer
 
     def post(self, request, pk, format=None):
         team = get_object_or_404(Team, pk=pk)
-        if request.user != team.created_by:
-            return Response({"message": "You are not allowed to perform this action"}, status=status.HTTP_403_FORBIDDEN)
-
         serializer = AddMemberSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         username = serializer.validated_data['username']
@@ -57,14 +55,11 @@ class AddMemberAPIView(APIView):
     
 
 class RemoveMemberAPIView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsTeamCreator]
     serializer_class = RemoveMemberSerializer
 
     def post(self, request, pk, format=None):
         team = get_object_or_404(Team, pk=pk)
-        if request.user != team.created_by:
-            return Response({"message": "You are not allowed to perform this action"}, status=status.HTTP_403_FORBIDDEN)
-
         serializer = RemoveMemberSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         username = serializer.validated_data['username']
