@@ -1,6 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
+from django.db.models import Q
 
 from teams.serializers import TeamSerializer
 from teams.models import Team
@@ -23,6 +24,6 @@ class TeamListAPIView(APIView):
     serializer_class = TeamSerializer
 
     def get(self, request, format=None):
-        teams = Team.objects.filter(members=request.user)
+        teams = Team.objects.filter(Q(members=request.user) | Q(created_by=request.user)).distinct()
         serializer = TeamSerializer(teams, many=True)
         return Response(serializer.data)
