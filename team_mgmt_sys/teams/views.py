@@ -5,9 +5,9 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User
 
-from teams.serializers import TeamSerializer, AddMemberSerializer, RemoveMemberSerializer
+from teams.serializers import TeamSerializer, AddMemberSerializer, RemoveMemberSerializer, TaskSerializer
 from teams.permissions import IsTeamCreator
-from teams.models import Team
+from teams.models import Team, Task
 
 
 class TeamCreateAPIView(APIView):
@@ -74,3 +74,33 @@ class RemoveMemberAPIView(APIView):
 
         response_serializer = TeamSerializer(team)
         return Response(response_serializer.data, status=status.HTTP_200_OK)
+    
+
+class TaskCreateAPIView(APIView):
+    """
+    API View to create tasks associated with a specific team.
+    """
+    permission_classes = [permissions.IsAuthenticated, IsTeamCreator]
+    serializer_class = TaskSerializer
+
+    def post(self, request, team_id, format=None):
+        team = get_object_or_404(Team, pk=team_id)
+
+        data = request.data
+        data['team'] = team.id
+        serializer = TaskSerializer(data=data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+class TaskListAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = TaskSerializer
+
+    def get(self, request, format=None):
+        tasks = Task.objects.filter(assigned_to=request.user)
+        serializer = TaskSerializer(tasks, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

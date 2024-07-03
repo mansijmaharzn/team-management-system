@@ -12,3 +12,14 @@ class Team(models.Model):
 
     def __str__(self):
         return f"{self.name} by {self.created_by.username}"
+    
+
+class Task(models.Model):
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    completed = models.BooleanField(default=False)
+    team = models.ForeignKey(Team, related_name='tasks', on_delete=models.CASCADE)
+    assigned_to = models.ForeignKey(User, related_name='assigned_tasks', on_delete=models.CASCADE, blank=True, null=True)
+
+    def __str__(self):
+        return self.title

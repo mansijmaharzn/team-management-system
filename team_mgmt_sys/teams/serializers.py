@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from teams.models import Team
+from teams.models import Team, Task
 from django.contrib.auth.models import User
 
 
@@ -22,3 +22,11 @@ class AddMemberSerializer(serializers.Serializer):
 
 class RemoveMemberSerializer(serializers.Serializer):
     username = serializers.CharField()
+
+
+class TaskSerializer(serializers.ModelSerializer):
+    assigned_to = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), allow_null=True, required=False)
+
+    class Meta:
+        model = Task
+        fields = ('id', 'title', 'description', 'completed', 'team', 'assigned_to')
