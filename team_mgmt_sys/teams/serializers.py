@@ -14,3 +14,11 @@ class TeamSerializer(serializers.ModelSerializer):
     class Meta:
         model = Team
         fields = ('id', 'name', 'description', 'created_at', 'created_by', 'members')
+
+
+class AddMemberSerializer(serializers.Serializer):
+    username = serializers.CharField()
+
+
+class RemoveMemberSerializer(serializers.Serializer):
+    username = serializers.CharField()
