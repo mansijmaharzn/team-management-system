@@ -38,6 +38,8 @@ class AddMemberAPIView(APIView):
 
     def post(self, request, pk, format=None):
         team = get_object_or_404(Team, pk=pk)
+        self.check_object_permissions(request, team)
+        
         serializer = AddMemberSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         username = serializer.validated_data['username']
@@ -60,6 +62,8 @@ class RemoveMemberAPIView(APIView):
 
     def post(self, request, pk, format=None):
         team = get_object_or_404(Team, pk=pk)
+        self.check_object_permissions(request, team)
+
         serializer = RemoveMemberSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         username = serializer.validated_data['username']
@@ -85,6 +89,7 @@ class TaskCreateAPIView(APIView):
 
     def post(self, request, team_id, format=None):
         team = get_object_or_404(Team, pk=team_id)
+        self.check_object_permissions(request, team)
 
         data = request.data
         data['team'] = team.id
