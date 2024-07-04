@@ -39,14 +39,14 @@ class AddMemberAPIView(APIView):
     def post(self, request, pk, format=None):
         team = get_object_or_404(Team, pk=pk)
         self.check_object_permissions(request, team)
-        
+
         serializer = AddMemberSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         username = serializer.validated_data['username']
 
         user = get_object_or_404(User, username=username)
 
-        if user in team.members.all():
+        if user in team.members.all() or user == team.created_by:
             return Response({'detail': 'User is already a member of the team.'}, status=status.HTTP_400_BAD_REQUEST)
         
         team.members.add(user)
@@ -69,6 +69,9 @@ class RemoveMemberAPIView(APIView):
         username = serializer.validated_data['username']
 
         user = get_object_or_404(User, username=username)
+
+        if user == team.created_by:
+            return Response({'detail': 'Cannot remove the creator of the team.'}, status=status.HTTP_400_BAD_REQUEST)
 
         if user not in team.members.all():
             return Response({'detail': 'User is not a member of the team.'}, status=status.HTTP_400_BAD_REQUEST)

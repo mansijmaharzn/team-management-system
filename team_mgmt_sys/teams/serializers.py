@@ -8,7 +8,8 @@ class TeamSerializer(serializers.ModelSerializer):
     members = serializers.SlugRelatedField(
         many=True,
         slug_field='username',
-        queryset=User.objects.all()
+        queryset=User.objects.all(),
+        required=False
     )
 
     class Meta:
