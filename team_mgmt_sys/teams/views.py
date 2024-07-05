@@ -1,3 +1,5 @@
+import logging
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
@@ -10,6 +12,9 @@ from teams.permissions import IsTeamCreator
 from teams.models import Team, Task
 
 
+logger = logging.getLogger(__name__)
+
+
 class TeamCreateAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = TeamSerializer
@@ -18,7 +23,10 @@ class TeamCreateAPIView(APIView):
         serializer = TeamSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(created_by=self.request.user)
+            logger.info(f"Team created by {request.user.username}")
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        logger.warning(f"Failed to create team by {request.user.username}: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -29,6 +37,7 @@ class TeamListAPIView(APIView):
     def get(self, request, format=None):
         teams = Team.objects.filter(Q(members=request.user) | Q(created_by=request.user)).distinct()
         serializer = TeamSerializer(teams, many=True)
+        logger.info(f"Teams list fetched by {request.user.username}")
         return Response(serializer.data)
     
 
@@ -53,6 +62,7 @@ class AddMemberAPIView(APIView):
         team.save()
 
         serializer = TeamSerializer(team)
+        logger.info(f"User {user.username} added to team {team.name} by {request.user.username}")
         return Response(serializer.data, status=status.HTTP_200_OK)
     
 
@@ -80,6 +90,7 @@ class RemoveMemberAPIView(APIView):
         team.save()
 
         response_serializer = TeamSerializer(team)
+        logger.info(f"User {user.username} removed from team {team.name} by {request.user.username}")
         return Response(response_serializer.data, status=status.HTTP_200_OK)
     
 
@@ -100,7 +111,10 @@ class TaskCreateAPIView(APIView):
 
         if serializer.is_valid():
             serializer.save()
+            logger.info(f"Task created by {request.user.username} in team {team.name}")
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+        logger.warning(f"Failed to create task by {request.user.username} in team {team.name}: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 
@@ -111,4 +125,5 @@ class TaskListAPIView(APIView):
     def get(self, request, format=None):
         tasks = Task.objects.filter(assigned_to=request.user)
         serializer = TaskSerializer(tasks, many=True)
+        logger.info(f"Tasks list fetched by {request.user.username}")
         return Response(serializer.data, status=status.HTTP_200_OK)

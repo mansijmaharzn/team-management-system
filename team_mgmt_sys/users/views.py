@@ -1,3 +1,5 @@
+import logging
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -5,6 +7,9 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import login, logout
 from django.contrib.auth.models import User
 from users.serializers import UserSerializer, RegisterSerializer, LoginSerializer
+
+
+logger = logging.getLogger(__name__)
 
 
 class RegisterAPI(APIView):
@@ -15,6 +20,7 @@ class RegisterAPI(APIView):
         if serializer.is_valid():
             user = serializer.save()
             refresh = RefreshToken.for_user(user)
+            logger.info(f"User {user.username} registered")
 
             return Response({
                 "user": UserSerializer(user).data,
@@ -22,6 +28,7 @@ class RegisterAPI(APIView):
                 "access": str(refresh.access_token),
             }, status=status.HTTP_201_CREATED)
         
+        logger.warning(f"Failed to register user: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 
@@ -33,12 +40,15 @@ class LoginAPI(APIView):
         if serializer.is_valid():
             user = serializer.validated_data
             refresh = RefreshToken.for_user(user)
+            logger.info(f"User {user.username} logged in")
+
             return Response({
                 "user": UserSerializer(user).data,
                 "refresh": str(refresh),
                 "access": str(refresh.access_token),
             }, status=status.HTTP_200_OK)
         
+        logger.warning(f"Failed to login user: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 
@@ -46,4 +56,5 @@ class LogoutAPI(APIView):
     serializer_class = UserSerializer
     
     def post(self, request):
+        logger.info(f"User {request.user.username} logged out")
         return Response(status=status.HTTP_200_OK)
