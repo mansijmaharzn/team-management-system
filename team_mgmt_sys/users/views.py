@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import login, logout
 from django.contrib.auth.models import User
-from users.serializers import UserSerializer, RegisterSerializer, LoginSerializer
+from users.serializers import UserSerializer, RegisterSerializer, LoginSerializer, LogoutSerializer
 
 
 logger = logging.getLogger(__name__)
@@ -53,8 +53,11 @@ class LoginAPI(APIView):
     
 
 class LogoutAPI(APIView):
-    serializer_class = UserSerializer
+    serializer_class = LogoutSerializer
     
     def post(self, request):
-        logger.info(f"User {request.user.username} logged out")
+        refresh_token = request.data.get('refresh')
+        token = RefreshToken(refresh_token)
+        token.blacklist()
+        logger.info(f"User {request.user.username} logged out and token blacklisted")
         return Response(status=status.HTTP_200_OK)
