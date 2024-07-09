@@ -37,3 +37,15 @@ class LogoutSerializer(serializers.Serializer):
     def validate(self, data):
         self.token = data['refresh']
         return data
+    
+
+class ResponseSerializer(serializers.Serializer):
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    refresh = serializers.CharField()
+    access = serializers.CharField()
+
+
+class CustomErrorSerializer(serializers.Serializer):
+    non_field_errors = serializers.ListField(
+        child=serializers.CharField()
+    )
