@@ -202,13 +202,13 @@ class TaskCreateAPIView(APIView):
         serializer = TaskSerializer(data=request.data)
         if serializer.is_valid():
             try:
-                team = Team.objects.get(pk=serializer.validated_data['team'])
+                team = serializer.validated_data['team']
             except Team.DoesNotExist as e:
                 return Response({'non_field_errors': [str(e)]}, status=status.HTTP_404_NOT_FOUND)
 
             self.check_object_permissions(request, team)
 
-            serializer.save()
+            serializer.save(team=team)
             logger.info(f"Task created by {request.user.username} in team {team.name}")
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         
