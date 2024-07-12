@@ -31,3 +31,9 @@ class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = ('id', 'title', 'description', 'completed', 'team', 'assigned_to')
+    
+
+class CustomErrorSerializer(serializers.Serializer):
+    non_field_errors = serializers.ListField(
+        child=serializers.CharField()
+    )
