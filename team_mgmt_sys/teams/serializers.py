@@ -4,6 +4,12 @@ from django.contrib.auth.models import User
 
 
 class TeamSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Team
+        fields = ('id', 'name', 'created_by')
+
+
+class TeamDetailSerializer(serializers.ModelSerializer):
     created_by = serializers.ReadOnlyField(source='created_by.username')
     members = serializers.SlugRelatedField(
         many=True,

@@ -11,7 +11,8 @@ from drf_spectacular.utils import extend_schema, OpenApiResponse
 from teams.permissions import IsTeamCreator
 from teams.models import Team, Task
 from teams.serializers import (
-    TeamSerializer, 
+    TeamSerializer,
+    TeamDetailSerializer, 
     AddMemberSerializer, 
     RemoveMemberSerializer, 
     TaskSerializer,
@@ -24,10 +25,9 @@ logger = logging.getLogger(__name__)
 
 class TeamCreateAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = TeamSerializer
 
     @extend_schema(
-            request=TeamSerializer,
+            request=TeamDetailSerializer,
             responses={
                 200: OpenApiResponse(
                     response=TeamSerializer,
@@ -40,24 +40,25 @@ class TeamCreateAPIView(APIView):
             }
     )
     def post(self, request, format=None):
-        serializer = TeamSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(created_by=self.request.user)
+        detail_serializer = TeamDetailSerializer(data=request.data)
+        if detail_serializer.is_valid():
+            team = detail_serializer.save(created_by=self.request.user)
             logger.info(f"Team created by {request.user.username}")
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            response_serializer = TeamSerializer(team)
+            return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
-        logger.warning(f"Failed to create team by {request.user.username}: {serializer.errors}")
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        logger.warning(f"Failed to create team by {request.user.username}: {detail_serializer.errors}")
+        return Response(detail_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class TeamListAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = TeamSerializer
+    serializer_class = TeamDetailSerializer
 
     @extend_schema(
         responses={
             200: OpenApiResponse(
-                response=TeamSerializer(many=True),
+                response=TeamDetailSerializer(many=True),
                 description='Successful Team List Fetch'
             ),
             400: OpenApiResponse(
@@ -79,13 +80,12 @@ class TeamListAPIView(APIView):
 
 class AddMemberAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsTeamCreator]
-    serializer_class = AddMemberSerializer
 
     @extend_schema(
         request=AddMemberSerializer,
         responses={
             200: OpenApiResponse(
-                response=TeamSerializer,
+                response=AddMemberSerializer,
                 description='Successful Member Addition'
             ),
             400: OpenApiResponse(
@@ -117,20 +117,18 @@ class AddMemberAPIView(APIView):
         team.members.add(user)
         team.save()
 
-        serializer = TeamSerializer(team)
         logger.info(f"User {user.username} added to team {team.name} by {request.user.username}")
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({"username": username}, status=status.HTTP_200_OK)
     
 
 class RemoveMemberAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsTeamCreator]
-    serializer_class = RemoveMemberSerializer
 
     @extend_schema(
         request=AddMemberSerializer,
         responses={
             200: OpenApiResponse(
-                response=TeamSerializer,
+                response=RemoveMemberSerializer,
                 description='Successful Member Removal'
             ),
             400: OpenApiResponse(
@@ -173,9 +171,8 @@ class RemoveMemberAPIView(APIView):
         team.members.remove(user)
         team.save()
 
-        response_serializer = TeamSerializer(team)
         logger.info(f"User {user.username} removed from team {team.name} by {request.user.username}")
-        return Response(response_serializer.data, status=status.HTTP_200_OK)
+        return Response({"username": username}, status=status.HTTP_200_OK)
     
 
 class TaskCreateAPIView(APIView):
