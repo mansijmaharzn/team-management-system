@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 
-from teams.permissions import IsTeamCreator
+from teams.permissions import IsTeamCreator, IsTeamMemberOrCreator
 from teams.models import Team, Task
 from teams.serializers import (
     TeamSerializer,
@@ -76,6 +76,30 @@ class TeamListAPIView(APIView):
         except Exception as e:
             logger.warning(f"Failed to fetch teams list by {request.user.username}: {str(e)}")
             return Response({'non_field_errors': [str(e)]}, status=status.HTTP_400_BAD_REQUEST)
+        
+
+class TeamDetailAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsTeamMemberOrCreator]
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=TeamDetailSerializer,
+                description='Successful Team Detail Fetch'
+            ),
+            400: OpenApiResponse(
+                response=CustomErrorSerializer,
+                description='Failed Team Detail Fetch'
+            )
+        }
+    )
+    def get(self, request, pk, format=None):
+        team = get_object_or_404(Team, pk=pk)
+        self.check_object_permissions(request, team)
+
+        serializer = TeamDetailSerializer(team)
+        logger.info(f"Team detail fetched by {request.user.username}")
+        return Response(serializer.data)
         
 
 class AddMemberAPIView(APIView):
