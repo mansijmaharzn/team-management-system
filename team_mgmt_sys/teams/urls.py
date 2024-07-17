@@ -9,6 +9,7 @@ from teams.views import (
     TaskListAPIView,
     TeamDetailAPIView,
     TaskStatusUpdateAPIView,
+    TeamTaskStatusView,
 )
 
 
@@ -27,4 +28,5 @@ urlpatterns = [
         TaskStatusUpdateAPIView.as_view(),
         name="task-update",
     ),
+    path("tasks/<int:pk>/details/", TeamTaskStatusView.as_view(), name="task-details"),
 ]

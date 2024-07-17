@@ -311,11 +311,8 @@ class TaskListAPIView(APIView):
                 "incomplete_task": incomplete_serializer.data,
             }
 
-            response_serializer = TaskListResponseSerializer(data=response_data)
-            response_serializer.is_valid(raise_exception=True)
-
             logger.info(f"Tasks list fetched by {request.user.username}")
-            return Response(response_serializer.data, status=status.HTTP_200_OK)
+            return Response(response_data, status=status.HTTP_200_OK)
         except Exception as e:
             logger.warning(
                 f"Failed to fetch tasks list by {request.user.username}: {str(e)}"
@@ -358,3 +355,49 @@ class TaskStatusUpdateAPIView(APIView):
             f"Task status updated by {request.user.username} for task {task.title}"
         )
         return Response(TaskSerializer(task).data, status=status.HTTP_200_OK)
+
+
+class TeamTaskStatusView(APIView):
+    """
+    API View to get detail task infomation of a specific team.
+    """
+
+    permission_classes = [permissions.IsAuthenticated, IsTeamCreator]
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=TaskListResponseSerializer,
+                description="Successful Task Detail Fetch",
+            ),
+            400: OpenApiResponse(
+                response=CustomErrorSerializer, description="Failed Task Detail Fetch"
+            ),
+        }
+    )
+    def get(self, request, pk, format=None):
+        try:
+            team = get_object_or_404(Team, pk=pk)
+            self.check_object_permissions(request, team)
+
+            tasks = Task.objects.filter(team=team)
+            completed_tasks = tasks.filter(completed=True)
+            incomplete_tasks = tasks.filter(completed=False)
+
+            completed_serializer = TaskDetailSerializer(completed_tasks, many=True)
+            incomplete_serializer = TaskDetailSerializer(incomplete_tasks, many=True)
+
+            response_data = {
+                "completed_task": completed_serializer.data,
+                "incomplete_task": incomplete_serializer.data,
+            }
+
+            logger.info(f"Tasks list fetched by {request.user.username}")
+            return Response(response_data, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.warning(
+                f"Failed to fetch tasks list by {request.user.username}: {str(e)}"
+            )
+            return Response(
+                {"non_field_errors": [str(e)]}, status=status.HTTP_400_BAD_REQUEST
+            )
