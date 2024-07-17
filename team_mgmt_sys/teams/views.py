@@ -26,6 +26,10 @@ logger = logging.getLogger(__name__)
 
 
 class TeamCreateAPIView(APIView):
+    """
+    API View to create a team.
+    """
+
     permission_classes = [permissions.IsAuthenticated]
 
     @extend_schema(
@@ -54,8 +58,11 @@ class TeamCreateAPIView(APIView):
 
 
 class TeamListAPIView(APIView):
+    """
+    API View to list teams associated with the authenticated user (member/creator of).
+    """
+
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = TeamDetailSerializer
 
     @extend_schema(
         responses={
@@ -86,6 +93,10 @@ class TeamListAPIView(APIView):
 
 
 class TeamDetailAPIView(APIView):
+    """
+    API View to get detail information of a specific team.
+    """
+
     permission_classes = [permissions.IsAuthenticated, IsTeamMemberOrCreator]
 
     @extend_schema(
@@ -109,6 +120,10 @@ class TeamDetailAPIView(APIView):
 
 
 class AddMemberAPIView(APIView):
+    """
+    API View to add member to a specific team.
+    """
+
     permission_classes = [permissions.IsAuthenticated, IsTeamCreator]
 
     @extend_schema(
@@ -156,6 +171,10 @@ class AddMemberAPIView(APIView):
 
 
 class RemoveMemberAPIView(APIView):
+    """
+    API View to remove member from a specific team.
+    """
+
     permission_classes = [permissions.IsAuthenticated, IsTeamCreator]
 
     @extend_schema(
@@ -260,6 +279,10 @@ class TaskCreateAPIView(APIView):
 
 
 class TaskListAPIView(APIView):
+    """
+    API View to list tasks assigned to the authenticated user.
+    """
+
     permission_classes = [permissions.IsAuthenticated]
 
     @extend_schema(
@@ -289,6 +312,10 @@ class TaskListAPIView(APIView):
 
 
 class TaskStatusUpdateAPIView(APIView):
+    """
+    API View to change task status.
+    """
+
     permission_classes = [permissions.IsAuthenticated, IsAssignedToTask]
 
     @extend_schema(
