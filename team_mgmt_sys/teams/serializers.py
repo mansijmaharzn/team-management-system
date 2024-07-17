@@ -47,5 +47,9 @@ class TaskDetailSerializer(serializers.ModelSerializer):
         fields = ("id", "title", "description", "completed", "team", "assigned_to")
 
 
+class TaskStatusUpdateSerializer(serializers.Serializer):
+    completed = serializers.BooleanField()
+
+
 class CustomErrorSerializer(serializers.Serializer):
     non_field_errors = serializers.ListField(child=serializers.CharField())

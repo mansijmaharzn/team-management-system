@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 
-from teams.permissions import IsTeamCreator, IsTeamMemberOrCreator
+from teams.permissions import IsTeamCreator, IsTeamMemberOrCreator, IsAssignedToTask
 from teams.models import Team, Task
 from teams.serializers import (
     TeamSerializer,
@@ -18,6 +18,7 @@ from teams.serializers import (
     TaskSerializer,
     TaskDetailSerializer,
     CustomErrorSerializer,
+    TaskStatusUpdateSerializer,
 )
 
 
@@ -260,7 +261,6 @@ class TaskCreateAPIView(APIView):
 
 class TaskListAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = TaskDetailSerializer
 
     @extend_schema(
         responses={
@@ -286,3 +286,34 @@ class TaskListAPIView(APIView):
             return Response(
                 {"non_field_errors": [str(e)]}, status=status.HTTP_400_BAD_REQUEST
             )
+
+
+class TaskStatusUpdateAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsAssignedToTask]
+
+    @extend_schema(
+        request=TaskStatusUpdateSerializer,
+        responses={
+            200: OpenApiResponse(
+                response=TaskSerializer, description="Successful Task Status Update"
+            ),
+            400: OpenApiResponse(
+                response=CustomErrorSerializer, description="Failed Task Status Update"
+            ),
+        },
+    )
+    def patch(self, request, pk, format=None):
+        task = get_object_or_404(Task, pk=pk)
+        self.check_object_permissions(request, task)
+
+        serializer = TaskStatusUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        completed = serializer.validated_data["completed"]
+
+        task.completed = completed
+        task.save()
+
+        logger.info(
+            f"Task status updated by {request.user.username} for task {task.title}"
+        )
+        return Response(TaskSerializer(task).data, status=status.HTTP_200_OK)
