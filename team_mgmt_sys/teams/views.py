@@ -17,6 +17,7 @@ from teams.serializers import (
     RemoveMemberSerializer,
     TaskSerializer,
     TaskDetailSerializer,
+    TaskListResponseSerializer,
     CustomErrorSerializer,
     TaskStatusUpdateSerializer,
 )
@@ -288,7 +289,7 @@ class TaskListAPIView(APIView):
     @extend_schema(
         responses={
             200: OpenApiResponse(
-                response=TaskDetailSerializer(many=True),
+                response=TaskListResponseSerializer,
                 description="Successful Task List Fetch",
             ),
             400: OpenApiResponse(
@@ -299,9 +300,22 @@ class TaskListAPIView(APIView):
     def get(self, request, format=None):
         try:
             tasks = Task.objects.filter(assigned_to=request.user)
-            serializer = TaskDetailSerializer(tasks, many=True)
+            completed_tasks = tasks.filter(completed=True)
+            incomplete_tasks = tasks.filter(completed=False)
+
+            completed_serializer = TaskDetailSerializer(completed_tasks, many=True)
+            incomplete_serializer = TaskDetailSerializer(incomplete_tasks, many=True)
+
+            response_data = {
+                "completed_task": completed_serializer.data,
+                "incomplete_task": incomplete_serializer.data,
+            }
+
+            response_serializer = TaskListResponseSerializer(data=response_data)
+            response_serializer.is_valid(raise_exception=True)
+
             logger.info(f"Tasks list fetched by {request.user.username}")
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(response_serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
             logger.warning(
                 f"Failed to fetch tasks list by {request.user.username}: {str(e)}"

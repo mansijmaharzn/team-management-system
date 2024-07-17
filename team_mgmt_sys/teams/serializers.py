@@ -47,6 +47,11 @@ class TaskDetailSerializer(serializers.ModelSerializer):
         fields = ("id", "title", "description", "completed", "team", "assigned_to")
 
 
+class TaskListResponseSerializer(serializers.Serializer):
+    completed_task = TaskDetailSerializer(many=True)
+    incomplete_task = TaskDetailSerializer(many=True)
+
+
 class TaskStatusUpdateSerializer(serializers.Serializer):
     completed = serializers.BooleanField()
 
