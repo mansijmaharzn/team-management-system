@@ -12,11 +12,12 @@ from teams.permissions import IsTeamCreator, IsTeamMemberOrCreator
 from teams.models import Team, Task
 from teams.serializers import (
     TeamSerializer,
-    TeamDetailSerializer, 
-    AddMemberSerializer, 
-    RemoveMemberSerializer, 
+    TeamDetailSerializer,
+    AddMemberSerializer,
+    RemoveMemberSerializer,
     TaskSerializer,
-    CustomErrorSerializer
+    TaskDetailSerializer,
+    CustomErrorSerializer,
 )
 
 
@@ -27,17 +28,15 @@ class TeamCreateAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     @extend_schema(
-            request=TeamDetailSerializer,
-            responses={
-                200: OpenApiResponse(
-                    response=TeamSerializer,
-                    description='Successful Team Creation'
-                ),
-                400: OpenApiResponse(
-                    response=CustomErrorSerializer,
-                    description='Failed Team Creation'
-                )
-            }
+        request=TeamDetailSerializer,
+        responses={
+            200: OpenApiResponse(
+                response=TeamSerializer, description="Successful Team Creation"
+            ),
+            400: OpenApiResponse(
+                response=CustomErrorSerializer, description="Failed Team Creation"
+            ),
+        },
     )
     def post(self, request, format=None):
         detail_serializer = TeamDetailSerializer(data=request.data)
@@ -47,7 +46,9 @@ class TeamCreateAPIView(APIView):
             response_serializer = TeamSerializer(team)
             return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
-        logger.warning(f"Failed to create team by {request.user.username}: {detail_serializer.errors}")
+        logger.warning(
+            f"Failed to create team by {request.user.username}: {detail_serializer.errors}"
+        )
         return Response(detail_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -59,24 +60,29 @@ class TeamListAPIView(APIView):
         responses={
             200: OpenApiResponse(
                 response=TeamDetailSerializer(many=True),
-                description='Successful Team List Fetch'
+                description="Successful Team List Fetch",
             ),
             400: OpenApiResponse(
-                response=CustomErrorSerializer,
-                description='Failed Team List Fetch'
-            )
+                response=CustomErrorSerializer, description="Failed Team List Fetch"
+            ),
         }
     )
     def get(self, request, format=None):
         try:
-            teams = Team.objects.filter(Q(members=request.user) | Q(created_by=request.user)).distinct()
+            teams = Team.objects.filter(
+                Q(members=request.user) | Q(created_by=request.user)
+            ).distinct()
             serializer = TeamSerializer(teams, many=True)
             logger.info(f"Teams list fetched by {request.user.username}")
             return Response(serializer.data)
         except Exception as e:
-            logger.warning(f"Failed to fetch teams list by {request.user.username}: {str(e)}")
-            return Response({'non_field_errors': [str(e)]}, status=status.HTTP_400_BAD_REQUEST)
-        
+            logger.warning(
+                f"Failed to fetch teams list by {request.user.username}: {str(e)}"
+            )
+            return Response(
+                {"non_field_errors": [str(e)]}, status=status.HTTP_400_BAD_REQUEST
+            )
+
 
 class TeamDetailAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsTeamMemberOrCreator]
@@ -85,12 +91,11 @@ class TeamDetailAPIView(APIView):
         responses={
             200: OpenApiResponse(
                 response=TeamDetailSerializer,
-                description='Successful Team Detail Fetch'
+                description="Successful Team Detail Fetch",
             ),
             400: OpenApiResponse(
-                response=CustomErrorSerializer,
-                description='Failed Team Detail Fetch'
-            )
+                response=CustomErrorSerializer, description="Failed Team Detail Fetch"
+            ),
         }
     )
     def get(self, request, pk, format=None):
@@ -100,7 +105,7 @@ class TeamDetailAPIView(APIView):
         serializer = TeamDetailSerializer(team)
         logger.info(f"Team detail fetched by {request.user.username}")
         return Response(serializer.data)
-        
+
 
 class AddMemberAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsTeamCreator]
@@ -109,18 +114,15 @@ class AddMemberAPIView(APIView):
         request=AddMemberSerializer,
         responses={
             200: OpenApiResponse(
-                response=AddMemberSerializer,
-                description='Successful Member Addition'
+                response=AddMemberSerializer, description="Successful Member Addition"
             ),
             400: OpenApiResponse(
-                response=CustomErrorSerializer,
-                description='User Already in Team'
+                response=CustomErrorSerializer, description="User Already in Team"
             ),
             404: OpenApiResponse(
-                response=CustomErrorSerializer,
-                description='User Not Found'
-            )
-        }
+                response=CustomErrorSerializer, description="User Not Found"
+            ),
+        },
     )
     def post(self, request, pk, format=None):
         team = get_object_or_404(Team, pk=pk)
@@ -128,22 +130,29 @@ class AddMemberAPIView(APIView):
 
         serializer = AddMemberSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        username = serializer.validated_data['username']
+        username = serializer.validated_data["username"]
 
         try:
             user = User.objects.get(username=username)
         except User.DoesNotExist as e:
-            return Response({'non_field_errors': [str(e)]}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"non_field_errors": [str(e)]}, status=status.HTTP_404_NOT_FOUND
+            )
 
         if user in team.members.all() or user == team.created_by:
-            return Response({'non_field_errors': ['User Already in Team']}, status=status.HTTP_400_BAD_REQUEST)
-        
+            return Response(
+                {"non_field_errors": ["User Already in Team"]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         team.members.add(user)
         team.save()
 
-        logger.info(f"User {user.username} added to team {team.name} by {request.user.username}")
+        logger.info(
+            f"User {user.username} added to team {team.name} by {request.user.username}"
+        )
         return Response({"username": username}, status=status.HTTP_200_OK)
-    
+
 
 class RemoveMemberAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsTeamCreator]
@@ -152,18 +161,16 @@ class RemoveMemberAPIView(APIView):
         request=AddMemberSerializer,
         responses={
             200: OpenApiResponse(
-                response=RemoveMemberSerializer,
-                description='Successful Member Removal'
+                response=RemoveMemberSerializer, description="Successful Member Removal"
             ),
             400: OpenApiResponse(
                 response=CustomErrorSerializer,
-                description='User not in Team or Cannot Remove Creator'
+                description="User not in Team or Cannot Remove Creator",
             ),
             404: OpenApiResponse(
-                response=CustomErrorSerializer,
-                description='User Not Found'
-            )
-        }
+                response=CustomErrorSerializer, description="User Not Found"
+            ),
+        },
     )
     def post(self, request, pk, format=None):
         team = get_object_or_404(Team, pk=pk)
@@ -171,94 +178,111 @@ class RemoveMemberAPIView(APIView):
 
         serializer = RemoveMemberSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        username = serializer.validated_data['username']
+        username = serializer.validated_data["username"]
 
         user = get_object_or_404(User, username=username)
-        
+
         if user == team.created_by:
-            return Response({'detail': 'Cannot remove the creator of the team.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Cannot remove the creator of the team."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         if user not in team.members.all():
-            return Response({'detail': 'User is not a member of the team.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "User is not a member of the team."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         try:
             user = User.objects.get(username=username)
         except User.DoesNotExist as e:
-            return Response({'non_field_errors': [str(e)]}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"non_field_errors": [str(e)]}, status=status.HTTP_404_NOT_FOUND
+            )
 
         if user == team.created_by:
-            return Response({'non_field_errors': ['Cannot Remove team Creator']}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"non_field_errors": ["Cannot Remove team Creator"]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         if user not in team.members.all():
-            return Response({'non_field_errors': ['User is not the member of team']}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"non_field_errors": ["User is not the member of team"]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         team.members.remove(user)
         team.save()
 
-        logger.info(f"User {user.username} removed from team {team.name} by {request.user.username}")
+        logger.info(
+            f"User {user.username} removed from team {team.name} by {request.user.username}"
+        )
         return Response({"username": username}, status=status.HTTP_200_OK)
-    
+
 
 class TaskCreateAPIView(APIView):
     """
     API View to create tasks associated with a specific team.
     """
+
     permission_classes = [permissions.IsAuthenticated, IsTeamCreator]
-    serializer_class = TaskSerializer
 
     @extend_schema(
-        request=TaskSerializer,
+        request=TaskDetailSerializer,
         responses={
             201: OpenApiResponse(
-                response=TaskSerializer,
-                description='Successful Task Creation'
+                response=TaskSerializer, description="Successful Task Creation"
             ),
             400: OpenApiResponse(
-                response=CustomErrorSerializer,
-                description='Failed Task Creation'
-            )
-        }
+                response=CustomErrorSerializer, description="Failed Task Creation"
+            ),
+        },
     )
     def post(self, request, format=None):
-        serializer = TaskSerializer(data=request.data)
+        serializer = TaskDetailSerializer(data=request.data)
         if serializer.is_valid():
-            try:
-                team = serializer.validated_data['team']
-            except Team.DoesNotExist as e:
-                return Response({'non_field_errors': [str(e)]}, status=status.HTTP_404_NOT_FOUND)
+            team = serializer.validated_data["team"]
 
             self.check_object_permissions(request, team)
 
-            serializer.save(team=team)
+            task = serializer.save(team=team)
+            response_serializer = TaskSerializer(task)
             logger.info(f"Task created by {request.user.username} in team {team.name}")
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        
-        logger.warning(f"Failed to create task by {request.user.username} in team: {serializer.errors}")
+            return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+        logger.warning(
+            f"Failed to create task by {request.user.username} in team: {serializer.errors}"
+        )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
 
 class TaskListAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = TaskSerializer
+    serializer_class = TaskDetailSerializer
 
     @extend_schema(
         responses={
             200: OpenApiResponse(
-                response=TaskSerializer(many=True),
-                description='Successful Task List Fetch'
+                response=TaskDetailSerializer(many=True),
+                description="Successful Task List Fetch",
             ),
             400: OpenApiResponse(
-                response=CustomErrorSerializer,
-                description='Failed Task List Fetch'
-            )
+                response=CustomErrorSerializer, description="Failed Task List Fetch"
+            ),
         }
     )
     def get(self, request, format=None):
         try:
             tasks = Task.objects.filter(assigned_to=request.user)
-            serializer = TaskSerializer(tasks, many=True)
+            serializer = TaskDetailSerializer(tasks, many=True)
             logger.info(f"Tasks list fetched by {request.user.username}")
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
-            logger.warning(f"Failed to fetch tasks list by {request.user.username}: {str(e)}")
-            return Response({'non_field_errors': [str(e)]}, status=status.HTTP_400_BAD_REQUEST)
+            logger.warning(
+                f"Failed to fetch tasks list by {request.user.username}: {str(e)}"
+            )
+            return Response(
+                {"non_field_errors": [str(e)]}, status=status.HTTP_400_BAD_REQUEST
+            )
