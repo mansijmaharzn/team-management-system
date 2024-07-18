@@ -20,6 +20,7 @@ from teams.serializers import (
     TaskListResponseSerializer,
     CustomErrorSerializer,
     TaskStatusUpdateSerializer,
+    TaskAssignedUserUpdateSerializer,
 )
 
 
@@ -353,6 +354,49 @@ class TaskStatusUpdateAPIView(APIView):
 
         logger.info(
             f"Task status updated by {request.user.username} for task {task.title}"
+        )
+        return Response(TaskSerializer(task).data, status=status.HTTP_200_OK)
+
+
+class TaskUpdateAssigneUserAPIView(APIView):
+    """
+    API View to update assigned user of a task.
+    """
+
+    permission_classes = [permissions.IsAuthenticated, IsTeamCreator]
+
+    @extend_schema(
+        request=TaskAssignedUserUpdateSerializer,
+        responses={
+            200: OpenApiResponse(
+                response=TaskSerializer,
+                description="Successful Task Assigned User Update",
+            ),
+            400: OpenApiResponse(
+                response=CustomErrorSerializer,
+                description="Failed Task Assigned User Update",
+            ),
+            404: OpenApiResponse(
+                response=CustomErrorSerializer, description="Task Not Found"
+            ),
+        },
+    )
+    def patch(self, request, pk, format=None):
+        task = get_object_or_404(Task, pk=pk)
+        team = get_object_or_404(Team, pk=task.team.pk)
+        self.check_object_permissions(request, team)
+
+        serializer = TaskAssignedUserUpdateSerializer(
+            data=request.data, instance=task, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        assigned_to = serializer.validated_data["assigned_to"]
+
+        task.assigned_to = assigned_to
+        task.save()
+
+        logger.info(
+            f"Task assigned user updated by {request.user.username} for task {task.title}"
         )
         return Response(TaskSerializer(task).data, status=status.HTTP_200_OK)
 

@@ -62,6 +62,24 @@ class TaskDetailSerializer(serializers.ModelSerializer):
         return data
 
 
+class TaskAssignedUserUpdateSerializer(serializers.Serializer):
+    assigned_to = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), allow_null=True, required=False
+    )
+
+    class Meta:
+        model = Task
+        fields = ("assigned_to",)
+
+    def validate_assigned_to(self, value):
+        task = self.instance  # instance is the task object
+        if value not in task.team.members.all() and value != task.team.created_by:
+            raise serializers.ValidationError(
+                "Assigned user must be a team member or the team creator."
+            )
+        return value
+
+
 class TaskListResponseSerializer(serializers.Serializer):
     completed_task = TaskDetailSerializer(many=True)
     incomplete_task = TaskDetailSerializer(many=True)
