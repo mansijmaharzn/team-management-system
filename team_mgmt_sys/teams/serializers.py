@@ -97,6 +97,7 @@ class TaskAssignedUserUpdateSerializer(serializers.Serializer):
 class TaskListResponseSerializer(serializers.Serializer):
     completed_task = TaskDetailSerializer(many=True)
     incomplete_task = TaskDetailSerializer(many=True)
+    task_completion_rate = serializers.DecimalField(max_digits=5, decimal_places=2)
 
 
 class TaskStatusUpdateSerializer(serializers.Serializer):

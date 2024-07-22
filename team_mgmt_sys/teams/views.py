@@ -304,12 +304,19 @@ class TaskListAPIView(APIView):
             completed_tasks = tasks.filter(completed=True).order_by("-due_date")
             incomplete_tasks = tasks.filter(completed=False).order_by("due_date")
 
+            total_tasks = completed_tasks.count() + incomplete_tasks.count()
+            if total_tasks == 0:
+                completion_rate = 0
+            else:
+                completion_rate = (completed_tasks.count() / total_tasks) * 100
+
             completed_serializer = TaskDetailSerializer(completed_tasks, many=True)
             incomplete_serializer = TaskDetailSerializer(incomplete_tasks, many=True)
 
             response_data = {
                 "completed_task": completed_serializer.data,
                 "incomplete_task": incomplete_serializer.data,
+                "task_completion_rate": completion_rate,
             }
 
             logger.info(f"Tasks list fetched by {request.user.username}")
@@ -428,16 +435,26 @@ class TeamTaskStatusView(APIView):
             completed_tasks = tasks.filter(completed=True).order_by("-due_date")
             incomplete_tasks = tasks.filter(completed=False).order_by("due_date")
 
+            total_tasks = completed_tasks.count() + incomplete_tasks.count()
+            if total_tasks == 0:
+                completion_rate = 0
+            else:
+                completion_rate = (completed_tasks.count() / total_tasks) * 100
+
             completed_serializer = TaskDetailSerializer(completed_tasks, many=True)
             incomplete_serializer = TaskDetailSerializer(incomplete_tasks, many=True)
 
             response_data = {
                 "completed_task": completed_serializer.data,
                 "incomplete_task": incomplete_serializer.data,
+                "task_completion_rate": round(
+                    completion_rate, 2
+                ),  # Rounded to 2 decimal places
             }
-
+            response_data = TaskListResponseSerializer(data=response_data)
+            response_data.is_valid(raise_exception=True)
             logger.info(f"Tasks list fetched by {request.user.username}")
-            return Response(response_data, status=status.HTTP_200_OK)
+            return Response(response_data.data, status=status.HTTP_200_OK)
         except Exception as e:
             logger.warning(
                 f"Failed to fetch tasks list by {request.user.username}: {str(e)}"
