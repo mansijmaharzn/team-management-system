@@ -301,8 +301,8 @@ class TaskListAPIView(APIView):
     def get(self, request, format=None):
         try:
             tasks = Task.objects.filter(assigned_to=request.user)
-            completed_tasks = tasks.filter(completed=True)
-            incomplete_tasks = tasks.filter(completed=False)
+            completed_tasks = tasks.filter(completed=True).order_by("-due_date")
+            incomplete_tasks = tasks.filter(completed=False).order_by("due_date")
 
             completed_serializer = TaskDetailSerializer(completed_tasks, many=True)
             incomplete_serializer = TaskDetailSerializer(incomplete_tasks, many=True)
@@ -425,8 +425,8 @@ class TeamTaskStatusView(APIView):
             self.check_object_permissions(request, team)
 
             tasks = Task.objects.filter(team=team)
-            completed_tasks = tasks.filter(completed=True)
-            incomplete_tasks = tasks.filter(completed=False)
+            completed_tasks = tasks.filter(completed=True).order_by("-due_date")
+            incomplete_tasks = tasks.filter(completed=False).order_by("due_date")
 
             completed_serializer = TaskDetailSerializer(completed_tasks, many=True)
             incomplete_serializer = TaskDetailSerializer(incomplete_tasks, many=True)

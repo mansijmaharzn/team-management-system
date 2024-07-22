@@ -31,7 +31,13 @@ class RemoveMemberSerializer(serializers.Serializer):
 class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
-        fields = ("id", "title", "completed", "assigned_to")
+        fields = (
+            "id",
+            "title",
+            "completed",
+            "assigned_to",
+            "due_date",
+        )
 
 
 class TaskDetailSerializer(serializers.ModelSerializer):
@@ -44,7 +50,15 @@ class TaskDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Task
-        fields = ("id", "title", "description", "completed", "team", "assigned_to")
+        fields = (
+            "id",
+            "title",
+            "description",
+            "completed",
+            "team",
+            "assigned_to",
+            "due_date",
+        )
 
     def validate(self, data):
         team = data.get("team")
