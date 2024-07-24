@@ -5,7 +5,6 @@ from rest_framework.response import Response
 from rest_framework import status, permissions
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from django.contrib.auth.models import User
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 
 from teams.permissions import IsTeamCreator, IsTeamMemberOrCreator, IsAssignedToTask
@@ -113,12 +112,20 @@ class TeamDetailAPIView(APIView):
         }
     )
     def get(self, request, pk, format=None):
-        team = get_object_or_404(Team, pk=pk)
-        self.check_object_permissions(request, team)
+        try:
+            team = get_object_or_404(Team, pk=pk)
+            self.check_object_permissions(request, team)
 
-        serializer = TeamDetailSerializer(team)
-        logger.info(f"Team detail fetched by {request.user.username}")
-        return Response(serializer.data)
+            serializer = TeamDetailSerializer(team)
+            logger.info(f"Team detail fetched by {request.user.username}")
+            return Response(serializer.data)
+        except Exception as e:
+            logger.warning(
+                f"Failed to fetch team detail by {request.user.username}: {str(e)}"
+            )
+            return Response(
+                {"non_field_errors": [str(e)]}, status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class AddMemberAPIView(APIView):
