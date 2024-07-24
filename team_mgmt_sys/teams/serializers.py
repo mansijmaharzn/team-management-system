@@ -98,6 +98,12 @@ class RemoveMemberSerializer(serializers.Serializer):
         team.members.remove(user)
         team.save()
 
+        # Remove all tasks assigned to the removing user
+        tasks = Task.objects.filter(assigned_to=user, team=team)
+        for task in tasks:
+            task.assigned_to = None
+            task.save()
+
         return username
 
 
