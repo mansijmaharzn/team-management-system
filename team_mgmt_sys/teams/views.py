@@ -146,30 +146,15 @@ class AddMemberAPIView(APIView):
         team = get_object_or_404(Team, pk=pk)
         self.check_object_permissions(request, team)
 
-        serializer = AddMemberSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        username = serializer.validated_data["username"]
-
-        try:
-            user = User.objects.get(username=username)
-        except User.DoesNotExist as e:
-            return Response(
-                {"non_field_errors": [str(e)]}, status=status.HTTP_404_NOT_FOUND
+        serializer = AddMemberSerializer(data=request.data, context={"team": team})
+        if serializer.is_valid():
+            username = serializer.save()
+            logger.info(
+                f"User {username} added to team {team.name} by {request.user.username}"
             )
-
-        if user in team.members.all() or user == team.created_by:
-            return Response(
-                {"non_field_errors": ["User Already in Team"]},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        team.members.add(user)
-        team.save()
-
-        logger.info(
-            f"User {user.username} added to team {team.name} by {request.user.username}"
-        )
-        return Response({"username": username}, status=status.HTTP_200_OK)
+            return Response({"username": username}, status=status.HTTP_200_OK)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class RemoveMemberAPIView(APIView):
@@ -198,50 +183,16 @@ class RemoveMemberAPIView(APIView):
         team = get_object_or_404(Team, pk=pk)
         self.check_object_permissions(request, team)
 
-        serializer = RemoveMemberSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        username = serializer.validated_data["username"]
+        serializer = RemoveMemberSerializer(data=request.data, context={"team": team})
 
-        user = get_object_or_404(User, username=username)
-
-        if user == team.created_by:
-            return Response(
-                {"detail": "Cannot remove the creator of the team."},
-                status=status.HTTP_400_BAD_REQUEST,
+        if serializer.is_valid():
+            username = serializer.save()
+            logger.info(
+                f"User {username} removed from team {team.name} by {request.user.username}"
             )
-
-        if user not in team.members.all():
-            return Response(
-                {"detail": "User is not a member of the team."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        try:
-            user = User.objects.get(username=username)
-        except User.DoesNotExist as e:
-            return Response(
-                {"non_field_errors": [str(e)]}, status=status.HTTP_404_NOT_FOUND
-            )
-
-        if user == team.created_by:
-            return Response(
-                {"non_field_errors": ["Cannot Remove team Creator"]},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        if user not in team.members.all():
-            return Response(
-                {"non_field_errors": ["User is not the member of team"]},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        team.members.remove(user)
-        team.save()
-
-        logger.info(
-            f"User {user.username} removed from team {team.name} by {request.user.username}"
-        )
-        return Response({"username": username}, status=status.HTTP_200_OK)
+            return Response({"username": username}, status=status.HTTP_200_OK)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class TaskCreateAPIView(APIView):
@@ -300,24 +251,8 @@ class TaskListAPIView(APIView):
     )
     def get(self, request, format=None):
         try:
-            tasks = Task.objects.filter(assigned_to=request.user)
-            completed_tasks = tasks.filter(completed=True).order_by("-due_date")
-            incomplete_tasks = tasks.filter(completed=False).order_by("due_date")
-
-            total_tasks = completed_tasks.count() + incomplete_tasks.count()
-            if total_tasks == 0:
-                completion_rate = 0
-            else:
-                completion_rate = (completed_tasks.count() / total_tasks) * 100
-
-            completed_serializer = TaskDetailSerializer(completed_tasks, many=True)
-            incomplete_serializer = TaskDetailSerializer(incomplete_tasks, many=True)
-
-            response_data = {
-                "completed_task": completed_serializer.data,
-                "incomplete_task": incomplete_serializer.data,
-                "task_completion_rate": completion_rate,
-            }
+            serializer = TaskListResponseSerializer(context={"user": request.user})
+            response_data = serializer.to_representation()
 
             logger.info(f"Tasks list fetched by {request.user.username}")
             return Response(response_data, status=status.HTTP_200_OK)
@@ -354,13 +289,11 @@ class TaskStatusUpdateAPIView(APIView):
 
         serializer = TaskStatusUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        completed = serializer.validated_data["completed"]
 
-        task.completed = completed
-        task.save()
+        updated_task = serializer.update(task, serializer.validated_data)
 
         logger.info(
-            f"Task status updated by {request.user.username} for task {task.title}"
+            f"Task status updated by {request.user.username} for task {updated_task.title}"
         )
         return Response(TaskSerializer(task).data, status=status.HTTP_200_OK)
 
@@ -397,13 +330,10 @@ class TaskUpdateAssigneUserAPIView(APIView):
             data=request.data, instance=task, partial=True
         )
         serializer.is_valid(raise_exception=True)
-        assigned_to = serializer.validated_data["assigned_to"]
-
-        task.assigned_to = assigned_to
-        task.save()
+        updated_task = serializer.save()
 
         logger.info(
-            f"Task assigned user updated by {request.user.username} for task {task.title}"
+            f"Task assigned user updated by {request.user.username} for task {updated_task.title}"
         )
         return Response(TaskSerializer(task).data, status=status.HTTP_200_OK)
 
@@ -432,29 +362,13 @@ class TeamTaskStatusView(APIView):
             self.check_object_permissions(request, team)
 
             tasks = Task.objects.filter(team=team)
-            completed_tasks = tasks.filter(completed=True).order_by("-due_date")
-            incomplete_tasks = tasks.filter(completed=False).order_by("due_date")
+            serializer = TaskListResponseSerializer(
+                context={"user": request.user, "tasks": tasks}
+            )
+            response_data = serializer.to_representation()
 
-            total_tasks = completed_tasks.count() + incomplete_tasks.count()
-            if total_tasks == 0:
-                completion_rate = 0
-            else:
-                completion_rate = (completed_tasks.count() / total_tasks) * 100
-
-            completed_serializer = TaskDetailSerializer(completed_tasks, many=True)
-            incomplete_serializer = TaskDetailSerializer(incomplete_tasks, many=True)
-
-            response_data = {
-                "completed_task": completed_serializer.data,
-                "incomplete_task": incomplete_serializer.data,
-                "task_completion_rate": round(
-                    completion_rate, 2
-                ),  # Rounded to 2 decimal places
-            }
-            response_data = TaskListResponseSerializer(data=response_data)
-            response_data.is_valid(raise_exception=True)
             logger.info(f"Tasks list fetched by {request.user.username}")
-            return Response(response_data.data, status=status.HTTP_200_OK)
+            return Response(response_data, status=status.HTTP_200_OK)
         except Exception as e:
             logger.warning(
                 f"Failed to fetch tasks list by {request.user.username}: {str(e)}"
