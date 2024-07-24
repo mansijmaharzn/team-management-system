@@ -24,7 +24,7 @@ class Task(models.Model):
     assigned_to = models.ForeignKey(
         User,
         related_name="assigned_tasks",
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         blank=True,
         null=True,
     )
