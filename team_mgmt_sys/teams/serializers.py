@@ -107,18 +107,6 @@ class RemoveMemberSerializer(serializers.Serializer):
         return username
 
 
-class TaskSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Task
-        fields = (
-            "id",
-            "title",
-            "completed",
-            "assigned_to",
-            "due_date",
-        )
-
-
 class TaskDetailSerializer(serializers.ModelSerializer):
     assigned_to = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(), allow_null=True, required=False
