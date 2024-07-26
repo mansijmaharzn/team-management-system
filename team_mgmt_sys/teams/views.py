@@ -37,7 +37,7 @@ class TeamCreateAPIView(APIView):
         request=TeamDetailSerializer,
         responses={
             200: OpenApiResponse(
-                response=TeamSerializer, description="Successful Team Creation"
+                response=TeamDetailSerializer, description="Successful Team Creation"
             ),
             400: OpenApiResponse(
                 response=CustomErrorSerializer, description="Failed Team Creation"
@@ -45,17 +45,25 @@ class TeamCreateAPIView(APIView):
         },
     )
     def post(self, request, format=None):
-        detail_serializer = TeamDetailSerializer(data=request.data)
-        if detail_serializer.is_valid():
-            team = detail_serializer.save(created_by=self.request.user)
+        serializer = TeamDetailSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(created_by=self.request.user)
             logger.info(f"Team created by {request.user.username}")
-            response_serializer = TeamSerializer(team)
-            return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+            return Response(
+                {
+                    "message": "Team Created Successfully",
+                    "data": serializer.data,
+                },
+                status=status.HTTP_201_CREATED,
+            )
 
         logger.warning(
-            f"Failed to create team by {request.user.username}: {detail_serializer.errors}"
+            f"Failed to create team by {request.user.username}: {serializer.errors}"
         )
-        return Response(detail_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"message": "Error Creating Team", "data": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
 
 class TeamListAPIView(APIView):
@@ -83,13 +91,20 @@ class TeamListAPIView(APIView):
             ).distinct()
             serializer = TeamSerializer(teams, many=True)
             logger.info(f"Teams list fetched by {request.user.username}")
-            return Response(serializer.data)
+            return Response(
+                {"message": "Successfully Fetched Team List", "data": serializer.data},
+                status=status.HTTP_200_OK,
+            )
         except Exception as e:
             logger.warning(
                 f"Failed to fetch teams list by {request.user.username}: {str(e)}"
             )
             return Response(
-                {"non_field_errors": [str(e)]}, status=status.HTTP_400_BAD_REQUEST
+                {
+                    "message": "Failed to Fetch Team List",
+                    "data": {"non_field_errors": [str(e)]},
+                },
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
 
@@ -118,13 +133,23 @@ class TeamDetailAPIView(APIView):
 
             serializer = TeamDetailSerializer(team)
             logger.info(f"Team detail fetched by {request.user.username}")
-            return Response(serializer.data)
+            return Response(
+                {
+                    "message": "Team Detail Fetched Successfully",
+                    "data": serializer.data,
+                },
+                status=status.HTTP_200_OK,
+            )
         except Exception as e:
             logger.warning(
                 f"Failed to fetch team detail by {request.user.username}: {str(e)}"
             )
             return Response(
-                {"non_field_errors": [str(e)]}, status=status.HTTP_400_BAD_REQUEST
+                {
+                    "message": "Failed to Fetch Team Detail",
+                    "data": {"non_field_errors": [str(e)]},
+                },
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
 
@@ -159,9 +184,18 @@ class AddMemberAPIView(APIView):
             logger.info(
                 f"User {username} added to team {team.name} by {request.user.username}"
             )
-            return Response({"username": username}, status=status.HTTP_200_OK)
+            return Response(
+                {
+                    "message": "User added to the team successfully",
+                    "data": serializer.data,
+                },
+                status=status.HTTP_200_OK,
+            )
         else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"message": "Error adding user to the team", "data": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 
 class RemoveMemberAPIView(APIView):
@@ -197,9 +231,21 @@ class RemoveMemberAPIView(APIView):
             logger.info(
                 f"User {username} removed from team {team.name} by {request.user.username}"
             )
-            return Response({"username": username}, status=status.HTTP_200_OK)
+            return Response(
+                {
+                    "message": "User removed from the team successfully",
+                    "data": serializer.data,
+                },
+                status=status.HTTP_200_OK,
+            )
         else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {
+                    "message": "Error removing user from the team",
+                    "data": serializer.errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 
 class TaskCreateAPIView(APIView):
@@ -213,7 +259,7 @@ class TaskCreateAPIView(APIView):
         request=TaskDetailSerializer,
         responses={
             201: OpenApiResponse(
-                response=TaskSerializer, description="Successful Task Creation"
+                response=TaskDetailSerializer, description="Successful Task Creation"
             ),
             400: OpenApiResponse(
                 response=CustomErrorSerializer, description="Failed Task Creation"
@@ -227,15 +273,20 @@ class TaskCreateAPIView(APIView):
 
             self.check_object_permissions(request, team)
 
-            task = serializer.save(team=team)
-            response_serializer = TaskSerializer(task)
+            serializer.save(team=team)
             logger.info(f"Task created by {request.user.username} in team {team.name}")
-            return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+            return Response(
+                {"message": "Task Creation Successsful", "data": serializer.data},
+                status=status.HTTP_201_CREATED,
+            )
 
         logger.warning(
             f"Failed to create task by {request.user.username} in team: {serializer.errors}"
         )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"message": "Task Creation Failed", "data": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
 
 class TaskListAPIView(APIView):
@@ -262,13 +313,20 @@ class TaskListAPIView(APIView):
             response_data = serializer.to_representation()
 
             logger.info(f"Tasks list fetched by {request.user.username}")
-            return Response(response_data, status=status.HTTP_200_OK)
+            return Response(
+                {"message": "Task List Fetched Successfully", "data": response_data},
+                status=status.HTTP_200_OK,
+            )
         except Exception as e:
             logger.warning(
                 f"Failed to fetch tasks list by {request.user.username}: {str(e)}"
             )
             return Response(
-                {"non_field_errors": [str(e)]}, status=status.HTTP_400_BAD_REQUEST
+                {
+                    "message": "Failed to Fetch Task List",
+                    "data": {"non_field_errors": [str(e)]},
+                },
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
 
@@ -283,7 +341,8 @@ class TaskStatusUpdateAPIView(APIView):
         request=TaskStatusUpdateSerializer,
         responses={
             200: OpenApiResponse(
-                response=TaskSerializer, description="Successful Task Status Update"
+                response=TaskStatusUpdateSerializer,
+                description="Successful Task Status Update",
             ),
             400: OpenApiResponse(
                 response=CustomErrorSerializer, description="Failed Task Status Update"
@@ -302,7 +361,10 @@ class TaskStatusUpdateAPIView(APIView):
         logger.info(
             f"Task status updated by {request.user.username} for task {updated_task.title}"
         )
-        return Response(TaskSerializer(task).data, status=status.HTTP_200_OK)
+        return Response(
+            {"message": "Task Updated Successfully", "data": serializer.data},
+            status=status.HTTP_200_OK,
+        )
 
 
 class TaskUpdateAssigneUserAPIView(APIView):
@@ -316,8 +378,8 @@ class TaskUpdateAssigneUserAPIView(APIView):
         request=TaskAssignedUserUpdateSerializer,
         responses={
             200: OpenApiResponse(
-                response=TaskSerializer,
-                description="Successful Task Assigned User Update",
+                response=TaskAssignedUserUpdateSerializer,
+                description="Successful Task Assigned to User Update",
             ),
             400: OpenApiResponse(
                 response=CustomErrorSerializer,
@@ -342,7 +404,13 @@ class TaskUpdateAssigneUserAPIView(APIView):
         logger.info(
             f"Task assigned user updated by {request.user.username} for task {updated_task.title}"
         )
-        return Response(TaskSerializer(task).data, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "message": "Successfully Assigned Task to the user",
+                "data": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class TeamTaskStatusView(APIView):
@@ -375,11 +443,18 @@ class TeamTaskStatusView(APIView):
             response_data = serializer.to_representation()
 
             logger.info(f"Tasks list fetched by {request.user.username}")
-            return Response(response_data, status=status.HTTP_200_OK)
+            return Response(
+                {"message": "Successfully Fetched Tasks", "data": response_data},
+                status=status.HTTP_200_OK,
+            )
         except Exception as e:
             logger.warning(
                 f"Failed to fetch tasks list by {request.user.username}: {str(e)}"
             )
             return Response(
-                {"non_field_errors": [str(e)]}, status=status.HTTP_400_BAD_REQUEST
+                {
+                    "message": "Failed to Fetch Tasks",
+                    "data": {"non_field_errors": [str(e)]},
+                },
+                status=status.HTTP_400_BAD_REQUEST,
             )
