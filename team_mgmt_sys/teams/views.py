@@ -14,7 +14,6 @@ from teams.serializers import (
     TeamDetailSerializer,
     AddMemberSerializer,
     RemoveMemberSerializer,
-    TaskSerializer,
     TaskDetailSerializer,
     TaskListResponseSerializer,
     CustomErrorSerializer,
