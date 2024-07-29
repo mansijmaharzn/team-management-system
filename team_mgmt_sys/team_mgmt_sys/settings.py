@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/5.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
-
+import os
 from pathlib import Path
 from datetime import timedelta
 
@@ -70,16 +70,31 @@ LOGGING = {
     "version": 1,  # the dictConfig format version
     "disable_existing_loggers": False,  # retain the default loggers
     "handlers": {
-        "file": {
-            "class": "logging.FileHandler",
-            "filename": "general.log",
+        # "file": {
+        #     "class": "logging.FileHandler",
+        #     "filename": "general.log",
+        #     "formatter": "verbose",
+        # },
+        "timed_rotating_file": {
+            "level": "DEBUG",
+            "class": "logging.handlers.TimedRotatingFileHandler",
+            "filename": os.path.join(BASE_DIR, "logs", "django.log"),
+            "when": "midnight",
+            "interval": 1,
+            "backupCount": 30,  # Number of backup files to keep
             "formatter": "verbose",
+        },
+        "console": {
+            "level": "DEBUG",
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
         },
     },
     "loggers": {
         "": {
             "level": "DEBUG",
-            "handlers": ["file"],
+            "handlers": ["timed_rotating_file", "console"],
+            "propagate": True,
         },
     },
     "formatters": {
