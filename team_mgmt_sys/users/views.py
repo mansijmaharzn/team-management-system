@@ -101,7 +101,8 @@ class UserAPI(APIView):
             ),
         }
     )
-    def get(self, request, user_id):
+    def get(self, request, *args, **kwargs):
+        user_id = kwargs.get("user_id")
         try:
             user = User.objects.get(id=user_id)
             serializer = UserSerializer(user)
