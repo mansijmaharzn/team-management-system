@@ -2,6 +2,8 @@ from rest_framework import serializers
 from teams.models import Team, Task
 from django.contrib.auth.models import User
 
+from teams.utils import calculate_completion_rate
+
 
 class TeamSerializer(serializers.ModelSerializer):
     class Meta:
@@ -190,7 +192,9 @@ class TaskListResponseSerializer(serializers.Serializer):
         if total_tasks == 0:
             completion_rate = 0
         else:
-            completion_rate = (completed_tasks.count() / total_tasks) * 100
+            completion_rate = calculate_completion_rate(
+                completed_tasks.count(), total_tasks
+            )
 
         # Serialize tasks
         completed_serializer = TaskDetailSerializer(completed_tasks, many=True)
