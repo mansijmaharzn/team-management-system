@@ -117,6 +117,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # Custom Middleware
+    "teams.middleware.custom_middleware.CustomMiddleware",
 ]
 
 ROOT_URLCONF = "team_mgmt_sys.urls"
