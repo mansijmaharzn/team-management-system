@@ -125,7 +125,8 @@ class TeamDetailAPIView(APIView):
             ),
         }
     )
-    def get(self, request, pk, format=None):
+    def get(self, request, *args, **kwargs):
+        pk = kwargs.get("pk")
         try:
             team = get_object_or_404(Team, pk=pk)
             self.check_object_permissions(request, team)
@@ -173,7 +174,8 @@ class AddMemberAPIView(APIView):
             ),
         },
     )
-    def post(self, request, pk, format=None):
+    def post(self, request, *args, **kwargs):
+        pk = kwargs.get("pk")
         team = get_object_or_404(Team, pk=pk)
         self.check_object_permissions(request, team)
 
@@ -219,7 +221,8 @@ class RemoveMemberAPIView(APIView):
             ),
         },
     )
-    def post(self, request, pk, format=None):
+    def post(self, request, *args, **kwargs):
+        pk = kwargs.get("pk")
         team = get_object_or_404(Team, pk=pk)
         self.check_object_permissions(request, team)
 
@@ -348,7 +351,8 @@ class TaskStatusUpdateAPIView(APIView):
             ),
         },
     )
-    def patch(self, request, pk, format=None):
+    def patch(self, request, *args, **kwargs):
+        pk = kwargs.get("pk")
         task = get_object_or_404(Task, pk=pk)
         self.check_object_permissions(request, task)
 
@@ -389,7 +393,8 @@ class TaskUpdateAssigneUserAPIView(APIView):
             ),
         },
     )
-    def patch(self, request, pk, format=None):
+    def patch(self, request, *args, **kwargs):
+        pk = kwargs.get("pk")
         task = get_object_or_404(Task, pk=pk)
         team = get_object_or_404(Team, pk=task.team.pk)
         self.check_object_permissions(request, team)
@@ -430,7 +435,8 @@ class TeamTaskStatusView(APIView):
             ),
         }
     )
-    def get(self, request, pk, format=None):
+    def get(self, request, *args, **kwargs):
+        pk = kwargs.get("pk")
         try:
             team = get_object_or_404(Team, pk=pk)
             self.check_object_permissions(request, team)
