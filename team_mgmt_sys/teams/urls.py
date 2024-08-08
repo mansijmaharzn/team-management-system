@@ -13,6 +13,7 @@ from teams.views import (
     TaskUpdateAssigneUserAPIView,
 )
 
+app_name = "teams"
 
 urlpatterns = [
     # Team-related endpoints
