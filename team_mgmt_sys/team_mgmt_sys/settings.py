@@ -12,6 +12,13 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 import os
 from pathlib import Path
 from datetime import timedelta
+from dotenv import load_dotenv
+
+
+# Load the .env file
+env_path = Path(".") / ".env"
+load_dotenv(dotenv_path=env_path)
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -70,11 +77,6 @@ LOGGING = {
     "version": 1,  # the dictConfig format version
     "disable_existing_loggers": False,  # retain the default loggers
     "handlers": {
-        # "file": {
-        #     "class": "logging.FileHandler",
-        #     "filename": "general.log",
-        #     "formatter": "verbose",
-        # },
         "timed_rotating_file": {
             "level": "DEBUG",
             "class": "logging.handlers.TimedRotatingFileHandler",
@@ -175,6 +177,24 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND")
+
+# Optional: Configure task result expiration time (time in seconds)
+CELERY_TASK_RESULT_EXPIRES = 3600
+
+# Optional: Serialize/deserialize task results
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_ACCEPT_CONTENT = ["json"]
+
+# Coonfigurations for email sender
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND")
+EMAIL_HOST = os.getenv("EMAIL_HOST")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT"))
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
