@@ -1,6 +1,15 @@
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
+
+from users.tasks import send_email_task
+
+env_path = Path(".") / ".env"
+load_dotenv(dotenv_path=env_path)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -21,6 +30,13 @@ class RegisterSerializer(serializers.ModelSerializer):
             validated_data["email"],
             validated_data["password"],
         )
+        subject = "Thanks for creating account!"
+        message = "We would expect you to view this email ;)"
+        from_email = os.getenv("EMAIL_HOST_USER")
+        recipient_list = [validated_data["email"]]
+
+        # Trigger the Celery task
+        send_email_task.delay(subject, message, from_email, recipient_list)
         return user
 
 
