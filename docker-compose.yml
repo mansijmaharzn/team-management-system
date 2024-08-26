@@ -1,26 +1,47 @@
 version: '3'
 
 services:
-  db:
+  postgres:
     image: postgres:latest
     environment:
       POSTGRES_USER: mansij
       POSTGRES_PASSWORD: password
       POSTGRES_DB: team_management_system
     ports:
-      - "127.0.0.1:5432:5432"
+      - "5432:5432"
+    container_name: team_management_system_postgres_container
 
-  web:
+  django:
     build: .
     restart: always
     command: sh -c "cd team_mgmt_sys && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
     env_file:
       - .env
     ports:
-      - "127.0.0.1:8000:8000"
+      - "8000:8000"
     volumes:
       - .:/code
     links:
-      - db
+      - postgres
     depends_on:
-      - db
+      - postgres
+    container_name: team_management_system_python_container
+
+  redis:
+    image: redis
+    ports:
+      - "6379:6379"
+    env_file:
+      - .env
+    container_name: team_management_system_redis_container
+
+  celery:
+    build: .
+    depends_on:
+      - django
+      - redis
+      - postgres
+    env_file:
+      - .env
+    command: sh -c "cd team_mgmt_sys && celery -A team_mgmt_sys worker -l info"
+    container_name: team_management_system_celery_worker
