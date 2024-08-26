@@ -23,4 +23,4 @@ COPY . /app/
 EXPOSE 8000
 
 # Run migrations and start the server (no need if using docker-compose.yml)
-# CMD ["sh", "-c", "cd team_mgmt_sys && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
+CMD ["sh", "-c", "cd team_mgmt_sys && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]

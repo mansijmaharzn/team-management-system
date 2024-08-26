@@ -153,7 +153,7 @@ DATABASES = {
         "NAME": "team_management_system",
         "USER": "mansij",
         "PASSWORD": "password",
-        "HOST": "db",
+        "HOST": "postgres",
         "PORT": "5432",
     }
 }
