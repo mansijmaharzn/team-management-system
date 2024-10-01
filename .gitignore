@@ -16,3 +16,4 @@ logs/
 
 # environments
 .env
+.env.prod
